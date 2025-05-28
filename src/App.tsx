@@ -1,46 +1,96 @@
-import { useEffect, useState, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
-import './App.css'
-import { getConnection } from './BackendConnection';
+import {
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+import "./App.css";
 
 function App() {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [submitted, setSubmit] = useState(false);
-  const [answer, setAnswer] = useState('');
+  const [answer, setAnswer] = useState("");
 
   const onChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     setQuery(event.target.value);
-  }
+  };
 
   useEffect(() => {
-    const fetchSummary = async (done: Dispatch<SetStateAction<boolean>>) => {
-      console.log('FETCHING');
-      const response = await getConnection().post('/snippet', JSON.stringify({
-        text: query
-      }), {responseType: 'stream', headers: {"Content-Type":"application/json"}});
+    const fetchSummary = async (
+      doneCall: Dispatch<SetStateAction<boolean>>
+    ) => {
 
-      response.data.on('data', (chunk) => {
-        console.log('Received chunk:', chunk.toString());
-        setAnswer((prev) => prev + chunk.toString());
+      const response = await fetch("http://localhost:3000/snippet", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: query }),
       });
 
-      done(false);
-    }
+      if (!response.body) {
+        throw new Error("ReadableStream not supported in this environment.");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      let partial: string = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        partial += decoder.decode(value, { stream: true });
+        setAnswer(partial);
+      }
+
+      doneCall(false);
+    };
     if (submitted) {
       fetchSummary(setSubmit);
     }
-  }, [setSubmit, query, submitted])
+  }, [setSubmit, query, submitted]);
 
   return (
     <>
       <div>
-          <div style={{display: 'flex', flexDirection: 'column'}}>
-            <textarea style={{width: 800, height: 400, overflowY:'scroll', background: 'white', color: 'black'}} value={answer}></textarea>
-            <textarea style={{minWidth: 800, minHeight: 200, background: 'white', color: 'black'}} disabled={submitted} value={query} onChange={onChange}></textarea>
-            <button style={{width: '100px', height: 80}} onClick={() => {setSubmit(true)}}>Send</button>
-          </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <textarea
+            style={{
+              width: 800,
+              height: 400,
+              overflowY: "scroll",
+              background: "white",
+              color: "black",
+            }}
+            contentEditable={false}
+            value={answer}
+          ></textarea>
+          <textarea
+            style={{
+              minWidth: 800,
+              minHeight: 200,
+              background: "white",
+              color: "black",
+            }}
+            disabled={submitted}
+            value={query}
+            onChange={onChange}
+          ></textarea>
+          <button
+            style={{ width: "100px", height: 80 }}
+            onClick={() => {
+              setSubmit(true);
+            }}
+          >
+            Send
+          </button>
+        </div>
       </div>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
