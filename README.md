@@ -7,11 +7,12 @@ There's no env vars setup in this project so it should be easy.
 
 Try to execute it by running this in your terminal:
 
-```
+```sh
   docker compose build && docker compose up
 ```
 if for heaven knowss what reason the latter exploded try it manually please:
-```
+
+```sh
 npm ci && npm run dev
 ```
 
