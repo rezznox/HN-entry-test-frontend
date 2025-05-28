@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+
+  # Vite React App
+  ai-front:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-front
+    ports:
+      - "5173:5173"
+    networks:
+      - ai-network
+    command: ["npm", "run", "dev"]
+
+networks:
+  ai-network:
+    driver: bridge
